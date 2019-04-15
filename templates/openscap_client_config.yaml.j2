@@ -17,12 +17,31 @@
 # Or (recommended for client reporting to Katello) consumer private key (e.g., '/etc/pki/consumer/key.pem')
 :host_private_key: '/etc/pki/consumer/key.pem'
 # policy (key is id as in Foreman)
-
-{{ policy.id }}:
-  :profile: '{{ scap_content }}'
-  :content_path: '/var/lib/openscap/content/{{scapcontents.json.digest}}.xml'
+{% for item in policy %} 
+{{ item.id }}:
+{% if item.tailoring_file_id > 0 %}
+{% for profile in tailoring_files[item.tailoring_file_id].tailoring_file_profiles %}
+{% if profile.id == item.tailoring_file_profile_id %}
+  :profile: {{profile.profile_id}}
+{% endif%}
+{% endfor %}
+  :content_path: '/var/lib/openscap/content/{{scap_content[item.scap_content_id].digest}}.xml'
   # Download path
   # A path to download SCAP content from proxy
-  :download_path: '/compliance/policies/{{policy.id}}/content/{{scapcontents.json.digest}}'
+  :download_path: '/compliance/policies/{{item.id}}/content/{{scap_content[item.scap_content_id].digest}}'
+  :tailoring_path: '/var/lib/openscap/content/{{tailoring_files[item.tailoring_file_id].digest}}.xml'
+  :tailoring_download_path: '/compliance/policies/{{item.id}}/tailoring/{{tailoring_files[item.tailoring_file_id].digest}}'
+{% else %}
+{% for profile in scap_content[item.scap_content_id].scap_content_profiles %}
+{% if profile.id == item.scap_content_profile_id %}
+  :profile: {{profile.profile_id}}
+{% endif%}
+{% endfor %}
+  :content_path: '/var/lib/openscap/content/{{scap_content[item.scap_content_id].digest}}.xml'
+  # Download path
+  # A path to download SCAP content from proxy
+  :download_path: '/compliance/policies/{{item.id}}/content/{{scap_content[item.scap_content_id].digest}}'
   :tailoring_path: ''
   :tailoring_download_path: ''
+{% endif %}
+{% endfor %}
